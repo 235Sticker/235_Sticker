@@ -1,0 +1,863 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>235cut — Layout Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f0f4fa;--white:#fff;--s2:#f4f7fc;
+  --border:#dde3ef;--border2:#b8c4d8;
+  /* "blue" variable names kept for code-compat; values are 235 Sticker red theme (rgb 182,1,5) */
+  --blue:#8e0104;--blue2:#b60105;--blue3:#de0106;--blue-bg:#fef2f2;--blue-light:#fee2e2;
+  --navy:#b60105;--tx:#0f172a;--tx2:#475569;--tx3:#94a3b8;
+  --green:#16a34a;--amber:#d97706;
+  --sh:0 1px 3px rgba(0,0,0,.08);--sh-md:0 4px 20px rgba(13,36,97,.13);
+  --sans:'Roboto','Tahoma','Arial',sans-serif;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;font-family:var(--sans);}
+body{background:var(--bg);color:var(--tx);font-size:14px;display:flex;flex-direction:column;}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--navy);border-bottom:1px solid rgba(255,255,255,.1);box-shadow:0 2px 8px rgba(13,36,97,.25);flex-shrink:0;z-index:50;}
+.tb-inner{display:flex;align-items:center;padding:0 16px;height:50px;gap:10px;overflow:hidden;min-width:0;}
+.logo{display:flex;align-items:center;font-family:'Roboto',sans-serif;color:#fff;letter-spacing:-.3px;white-space:nowrap;flex-shrink:0;}
+.tb-sep{width:1px;height:22px;background:rgba(255,255,255,.2);flex-shrink:0;margin:0 2px;}
+
+/* profile buttons */
+.mat-profiles{display:contents;}
+.mp-btn{padding:5px 10px;border-radius:7px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);
+  font-size:11px;font-family:var(--sans);font-weight:500;color:rgba(255,255,255,.75);cursor:pointer;
+  transition:all .15s;white-space:nowrap;line-height:1.3;text-align:center;}
+.mp-btn:hover{border-color:rgba(255,255,255,.6);color:#fff;background:rgba(255,255,255,.18);}
+.mp-btn.active{border-color:#fff;background:rgba(255,255,255,.22);color:#fff;font-weight:600;}
+.mp-btn .mpname{font-size:11px;}
+.mp-btn .mpsize{font-size:9px;opacity:.75;}
+.mp-edit{padding:5px 10px;border-radius:7px;border:1.5px dashed rgba(255,255,255,.3);background:transparent;
+  font-size:11px;font-family:var(--sans);color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.mp-edit:hover{border-color:rgba(255,255,255,.7);color:#fff;}
+
+.tb-unit{display:flex;align-items:center;gap:5px;flex-shrink:0;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:7px;padding:4px 8px;}
+.tb-unit label{font-size:11px;color:rgba(255,255,255,.6);font-weight:500;}
+.tb-unit select{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:5px;padding:3px 6px;font-family:var(--sans);font-size:12px;color:#fff;outline:none;cursor:pointer;}
+.tb-unit select option{background:var(--navy);color:#fff;}
+
+.top-stat{font-family:var(--sans);font-size:12px;color:rgba(255,255,255,.55);white-space:nowrap;flex-shrink:0;margin-left:auto;}
+.top-stat b{color:#fff;font-weight:700;}
+
+/* ── MODAL BASE ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--white);border-radius:14px;box-shadow:0 8px 40px rgba(13,36,97,.2);width:420px;max-width:94vw;animation:popIn .18s ease;max-height:92vh;overflow-y:auto;}
+@keyframes popIn{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
+.modal-hd{padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-hd h3{font-size:15px;font-weight:700;color:var(--navy);}
+.modal-x{background:none;border:none;font-size:18px;color:var(--tx3);cursor:pointer;padding:2px 6px;border-radius:4px;}
+.modal-x:hover{color:var(--tx);}
+.modal-body{padding:16px 20px 20px;}
+
+/* ── PRESET EDIT MODAL ── */
+.preset-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:16px;}
+.pe-btn{padding:8px 6px;border-radius:8px;border:2px solid var(--border);background:var(--s2);cursor:pointer;text-align:center;transition:all .15s;}
+.pe-btn:hover{border-color:var(--border2);background:var(--white);}
+.pe-btn.active{border-color:var(--blue2);background:var(--blue-bg);}
+.pe-btn .pen{font-size:11px;font-weight:700;color:var(--navy);line-height:1.3;}
+.pe-btn.active .pen{color:var(--blue2);}
+.pe-btn .pes{font-size:9px;color:var(--tx3);margin-top:1px;}
+.pe-form{background:var(--s2);border-radius:10px;padding:14px 16px;border:1px solid var(--border);}
+.pe-form label{font-size:11px;color:var(--tx2);display:block;margin-bottom:3px;font-weight:500;}
+.pe-form input[type=text],.pe-form input[type=number]{
+  width:100%;background:var(--white);border:1px solid var(--border2);border-radius:7px;
+  padding:7px 10px;color:var(--tx);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .15s;}
+.pe-form input:focus{border-color:var(--blue2);}
+.pe-form input[type=number]::-webkit-inner-spin-button{display:none;}
+.pe-dim-row{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:end;margin-top:8px;}
+.pe-cross{font-size:14px;color:var(--tx3);padding-bottom:8px;text-align:center;}
+.pe-save{width:100%;margin-top:12px;padding:9px;border-radius:8px;background:var(--blue2);color:#fff;border:none;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;}
+.pe-save:hover{background:var(--blue);}
+
+/* ── WORKSPACE ── */
+.workspace{display:flex;flex:1;overflow:hidden;min-height:0;}
+
+/* ── LEFT PANEL ── */
+.panel{width:222px;flex-shrink:0;background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.psec{padding:10px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.stitle{font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;}
+
+/* die-cut inputs */
+.dc-row{display:grid;grid-template-columns:1fr auto 1fr;gap:4px;align-items:end;margin-bottom:6px;}
+.dc-row label{font-size:10px;color:var(--tx2);display:block;margin-bottom:3px;font-weight:500;}
+.dc-row input{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 7px;color:var(--tx);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .15s;text-align:center;}
+.dc-row input:focus{border-color:var(--blue2);background:var(--white);}
+.dc-row input::-webkit-inner-spin-button{display:none;}
+.dc-cross{font-size:13px;color:var(--tx3);padding-bottom:8px;text-align:center;}
+.gap-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;}
+.gap-row label{font-size:10px;color:var(--tx2);font-weight:500;white-space:nowrap;}
+.gap-row input{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 7px;color:var(--tx);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .15s;text-align:center;min-width:0;}
+.gap-row input:focus{border-color:var(--blue2);background:var(--white);}
+.gap-row input::-webkit-inner-spin-button{display:none;}
+.gap-row .gunit{font-size:10px;color:var(--tx3);white-space:nowrap;}
+
+/* layout tabs — compact */
+.layout-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.lbtn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border-radius:7px;border:2px solid var(--border);background:var(--s2);cursor:pointer;transition:all .15s;text-align:center;}
+.lbtn:hover{border-color:var(--border2);background:var(--white);}
+.lbtn.active{border-color:var(--blue2);background:var(--blue-bg);}
+.lbtn.best-layout{border-color:#16a34a;background:#f0fdf4;}
+.lbtn.best-layout:hover{border-color:#15803d;background:#dcfce7;}
+.lbtn.best-layout.active{border-color:#16a34a;background:#dcfce7;}
+.lcount{font-size:17px;font-weight:700;color:var(--navy);line-height:1;}
+.lbtn.active .lcount{color:var(--blue2);}
+.lname{font-size:9px;color:var(--tx2);font-weight:500;line-height:1.3;}
+.licon{width:36px;height:26px;border:1.5px solid var(--tx3);border-radius:2px;overflow:hidden;flex-shrink:0;}
+.lbtn.active .licon{border-color:var(--blue2);}
+
+/* save btn — smaller */
+.btn-save{width:100%;padding:7px;border-radius:7px;background:var(--blue2);color:#fff;border:none;font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:5px;}
+.btn-save:hover{background:var(--blue);}
+.btn-save:active{transform:scale(.98);}
+
+/* project list — compact */
+.proj-list{flex:1;overflow-y:auto;padding:6px 9px;display:flex;flex-direction:column;gap:3px;}
+.pcard{background:var(--s2);border:1.5px solid var(--border);border-radius:7px;padding:6px 9px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:7px;}
+.pcard:hover{border-color:var(--border2);background:var(--white);}
+.pcard.active{border-color:var(--blue2);background:var(--blue-bg);}
+.pcard-info{flex:1;min-width:0;}
+.pname{font-size:11px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pmeta{font-size:10px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pbadge{display:inline-flex;align-items:center;background:var(--blue2);color:#fff;font-size:10px;font-weight:600;padding:2px 6px;border-radius:7px;white-space:nowrap;flex-shrink:0;}
+.pdel{background:none;border:none;color:var(--tx3);cursor:pointer;font-size:11px;padding:2px 3px;border-radius:3px;transition:color .1s;flex-shrink:0;line-height:1;}
+.pdel:hover{color:var(--blue);}
+.empty-proj{text-align:center;padding:14px;color:var(--tx3);font-size:11px;}
+.empty-proj .ico{font-size:20px;margin-bottom:4px;}
+
+/* ── CANVAS ── */
+.canvas-area{flex:1;overflow:auto;background:var(--bg);background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:20px 20px;}
+.canvas-wrap{min-width:100%;min-height:100%;display:flex;align-items:center;justify-content:center;padding:60px 20px 40px 60px;}
+.sheet-outer{display:inline-flex;flex-direction:column;align-items:center;gap:7px;}
+.sheet{background:#fff;position:relative;outline:2px solid var(--blue2);box-shadow:var(--sh-md);flex-shrink:0;overflow:visible;}
+.sheet-lbl{font-family:var(--sans);font-size:11px;color:var(--tx2);}
+.placed{position:absolute;inset:0;pointer-events:none;}
+.pi{position:absolute;border:1.5px solid var(--blue2);background:rgba(37,99,235,.05);box-sizing:border-box;}
+.pi.rot{background:rgba(37,99,235,.10);border-style:dashed;}
+.count-ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.count-big{font-size:clamp(32px,10vw,96px);font-weight:700;color:rgba(26,63,170,.12);font-family:var(--sans);user-select:none;}
+
+/* ── RIGHT PANEL ── */
+.rpanel{width:155px;flex-shrink:0;background:var(--white);border-left:1px solid var(--border);padding:11px 11px;display:flex;flex-direction:column;gap:11px;overflow-y:auto;transition:width .2s,padding .2s;}
+.rpanel.collapsed{width:0;padding:0;overflow:hidden;}
+.rpanel-toggle{position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:30;width:20px;height:44px;background:var(--white);border:1px solid var(--border);border-right:none;border-radius:8px 0 0 8px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:-2px 0 6px rgba(0,0,0,.07);transition:right .2s;}
+.rpanel-toggle:hover{background:var(--blue-bg);}
+.rp-wrap{position:relative;display:flex;}
+.srow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
+.slbl{font-size:11px;color:var(--tx2);}
+.sval{font-family:var(--sans);font-size:12px;color:var(--tx);font-weight:600;}
+.sval.hi{color:var(--blue2);font-size:18px;font-weight:700;}
+.ubar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:3px;}
+.ufill{height:100%;border-radius:3px;background:var(--green);transition:width .4s;}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+/* ── DIMENSION ANNOTATIONS ── */
+.dim-label{
+  position:absolute;pointer-events:none;
+  font-family:var(--sans);font-size:10px;font-weight:600;
+  color:var(--blue2);white-space:nowrap;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+}
+/* Width dimension: sits above first rect */
+.dim-w{
+  height:16px;
+  flex-direction:column;gap:1px;
+}
+/* Height dimension: sits left of first rect */
+.dim-h{
+  width:16px;
+  flex-direction:row;gap:1px;
+  writing-mode:vertical-lr;
+  transform:rotate(180deg);
+}
+/* Gap arrow: horizontal, between col 0 and col 1 */
+.dim-gap{
+  height:12px;
+  flex-direction:column;gap:1px;
+}
+
+/* Arrow lines using pseudo-elements */
+.dim-arrow{
+  position:absolute;pointer-events:none;
+}
+.dim-arrow-line{
+  background:var(--blue2);
+  position:absolute;
+}
+/* Margin bracket lines */
+.margin-line{
+  position:absolute;pointer-events:none;
+  border:1px dashed rgba(37,99,235,.45);
+}
+.margin-label{
+  position:absolute;pointer-events:none;
+  font-family:var(--sans);font-size:9px;font-weight:700;
+  color:rgba(37,99,235,.75);white-space:nowrap;
+  background:rgba(255,255,255,.85);padding:1px 3px;border-radius:3px;
+  line-height:1.3;
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-inner">
+    <div class="logo">
+      <img src="235logo.png" width="32" height="32" style="vertical-align:middle;margin-right:8px;border-radius:50%;flex-shrink:0;object-fit:cover;">
+      <span style="font-size:17px;font-weight:700;letter-spacing:-.3px;">235cut</span>
+      <sub style="font-size:10px;color:rgba(255,255,255,.45);font-weight:400;letter-spacing:0;vertical-align:middle;margin-left:3px;">Layout Planner</sub>
+    </div>
+    <div class="tb-sep"></div>
+    <div style="display:flex;align-items:center;gap:4px;flex:1;overflow-x:auto;-webkit-overflow-scrolling:touch;min-width:0;scrollbar-width:none;">
+      <div id="mat-profiles" style="display:contents"></div>
+      <button class="mp-edit" style="flex-shrink:0" onclick="openPresetModal()">✏ แก้ไข preset</button>
+      <div class="tb-sep" style="flex-shrink:0"></div>
+      <div class="tb-unit" style="flex-shrink:0">
+        <label>หน่วย</label>
+        <select id="unit" onchange="changeUnit(this.value)">
+          <option value="cm" selected>cm</option>
+          <option value="mm">mm</option>
+          <option value="in">inch</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRESET EDIT MODAL -->
+<div class="modal-overlay" id="preset-overlay" onclick="if(event.target===this)closePresetModal()">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <h3>✏ แก้ไข Preset วัสดุ</h3>
+      <button class="modal-x" onclick="closePresetModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="preset-grid" id="pe-grid"></div>
+      <div class="pe-form" id="pe-form">
+        <label>ชื่อ Preset</label>
+        <input type="text" id="pe-name" placeholder="เช่น STK 13x19''">
+        <div class="pe-dim-row">
+          <div><label>กว้าง</label><input type="number" id="pe-w" min="0.1" step="0.1"></div>
+          <div class="pe-cross">×</div>
+          <div><label>ยาว</label><input type="number" id="pe-h" min="0.1" step="0.1"></div>
+        </div>
+        <button class="pe-save" onclick="savePreset()">💾 บันทึก Preset นี้</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WORKSPACE -->
+<div class="workspace">
+  <div class="panel">
+    <!-- Die-cut size -->
+    <div class="psec">
+      <div class="stitle">ขนาดไดคัท</div>
+      <div class="dc-row">
+        <div><label>กว้าง</label><input type="number" id="cw" value="14" min="0.1" step="0.1" oninput="rerender()"></div>
+        <div class="dc-cross">×</div>
+        <div><label>สูง</label><input type="number" id="ch" value="10" min="0.1" step="0.1" oninput="rerender()"></div>
+      </div>
+      <div class="gap-row">
+        <label>Gap</label>
+        <input type="number" id="gap" value="0.2" min="0" step="0.1" oninput="rerender()">
+        <span class="gunit" id="gunit">cm</span>
+      </div>
+    </div>
+    <!-- Layout -->
+    <div class="psec">
+      <div class="stitle">เลือก Layout</div>
+      <div class="layout-tabs" id="layout-tabs"></div>
+    </div>
+    <!-- Save -->
+    <div class="psec">
+      <button class="btn-save" id="btn-save" onclick="saveProject()">💾 Save Project</button>
+    </div>
+    <!-- Saved projects -->
+    <div class="stitle" style="padding:8px 12px 0;flex-shrink:0">SAVED PROJECTS</div>
+    <div class="proj-list" id="proj-list"></div>
+  </div>
+
+  <!-- CANVAS -->
+  <div class="canvas-area" id="canvas-area">
+    <div class="canvas-wrap">
+      <div class="sheet-outer">
+        <div class="sheet" id="sheet">
+          <div class="placed" id="placed"></div>
+          <div class="count-ov"><div class="count-big" id="count-big"></div></div>
+        </div>
+        <div class="sheet-lbl" id="sheet-lbl"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="rp-wrap">
+    <button class="rpanel-toggle" id="rp-toggle" onclick="toggleRpanel()" title="เปิด/ปิดแผงข้อมูล">
+      <span id="rp-arrow" style="font-size:11px;color:var(--blue2);">◀▶</span>
+    </button>
+    <div class="rpanel" id="rpanel">
+      <div>
+        <div class="stitle">ผลลัพธ์</div>
+        <div class="srow"><span class="slbl">ได้จำนวน</span><span class="sval hi" id="st-n">—</span></div>
+        <div class="srow"><span class="slbl">Layout</span><span class="sval" id="st-l">—</span></div>
+      </div>
+      <div>
+        <div class="stitle">พื้นที่</div>
+        <div class="srow"><span class="slbl">คอลัมน์</span><span class="sval" id="st-c">—</span></div>
+        <div class="srow"><span class="slbl">แถว</span><span class="sval" id="st-r">—</span></div>
+        <div class="srow"><span class="slbl">Utilization</span><span class="sval" id="st-u">—</span></div>
+        <div class="ubar"><div class="ufill" id="ufill" style="width:0%"></div></div>
+      </div>
+      <div>
+        <div class="stitle">ขนาด</div>
+        <div class="srow"><span class="slbl">วัสดุ</span><span class="sval" id="st-sw">—</span></div>
+        <div class="srow"><span class="slbl">ไดคัท</span><span class="sval" id="st-cw">—</span></div>
+        <div class="srow"><span class="slbl">Gap</span><span class="sval" id="st-g">—</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── UNIT ──────────────────────────────────────────
+let UNIT = 'cm';
+const TO_CM   = {cm:1, mm:0.1, in:2.54};
+const FROM_CM = {cm:1, mm:10,  in:1/2.54};
+const STEP    = {cm:'0.1', mm:'1', in:'0.001'};
+const PREC    = {cm:2, mm:1, in:3};
+function toCm(v)  { return v * TO_CM[UNIT]; }
+function fromCm(v){ return +(v * FROM_CM[UNIT]).toFixed(PREC[UNIT]); }
+function u()      { return UNIT; }
+
+function changeUnit(nu){
+  const cwCm  = toCm(parseFloat(document.getElementById('cw').value)||0);
+  const chCm  = toCm(parseFloat(document.getElementById('ch').value)||0);
+  const gapCm = toCm(parseFloat(document.getElementById('gap').value)||0);
+  UNIT = nu;
+  document.getElementById('unit').value = nu;
+  document.getElementById('gunit').textContent = nu;
+  const s = STEP[nu];
+  document.getElementById('cw').step  = s; document.getElementById('cw').value  = fromCm(cwCm);
+  document.getElementById('ch').step  = s; document.getElementById('ch').value  = fromCm(chCm);
+  document.getElementById('gap').step = s; document.getElementById('gap').value = fromCm(gapCm);
+  // update modal inputs if open
+  document.getElementById('pe-w').step = s;
+  document.getElementById('pe-h').step = s;
+  if(editingIdx >= 0){
+    document.getElementById('pe-w').value = fromCm(PRESETS[editingIdx].w);
+    document.getElementById('pe-h').value = fromCm(PRESETS[editingIdx].h);
+  }
+  renderMatProfiles();
+  rerender();
+}
+
+// ── PRESETS ───────────────────────────────────────
+const DEFAULT_PRESETS = [
+  { name:"STK 13x19''",  w:30.8, h:42.8 },
+  { name:"Paper 13x19''",w:31.8, h:46.0 },
+  { name:"PVC 127 cm",   w:124,  h:80.0 },
+  { name:"A3",           w:29.7, h:42.0 },
+  { name:"A4",           w:21.0, h:29.7 },
+  { name:"A5",           w:14.8, h:21.0 },
+];
+
+// load from localStorage or use defaults (all in cm)
+let PRESETS = JSON.parse(localStorage.getItem('kdpcut_presets') || 'null') || DEFAULT_PRESETS.map(p=>({...p}));
+let activeMat = 0;
+let matW_cm = PRESETS[0].w, matH_cm = PRESETS[0].h;
+let editingIdx = 0;
+
+function savePresetsToStorage(){
+  localStorage.setItem('kdpcut_presets', JSON.stringify(PRESETS));
+}
+
+function renderMatProfiles(){
+  document.getElementById('mat-profiles').innerHTML = PRESETS.map((p,i)=>`
+    <button class="mp-btn${i===activeMat?' active':''}" onclick="selectPreset(${i})">
+      <div class="mpname">${esc(p.name)}</div>
+      <div class="mpsize">${fromCm(p.w)}×${fromCm(p.h)}</div>
+    </button>`).join('');
+}
+
+function selectPreset(idx){
+  activeMat = idx;
+  matW_cm = PRESETS[idx].w;
+  matH_cm = PRESETS[idx].h;
+  renderMatProfiles();
+  rerender();
+}
+
+// ── PRESET EDIT MODAL ────────────────────────────
+function openPresetModal(){
+  editingIdx = activeMat; // open on currently active
+  renderPeGrid();
+  loadPeForm(editingIdx);
+  document.getElementById('preset-overlay').classList.add('open');
+}
+function closePresetModal(){
+  document.getElementById('preset-overlay').classList.remove('open');
+}
+function renderPeGrid(){
+  document.getElementById('pe-grid').innerHTML = PRESETS.map((p,i)=>`
+    <button class="pe-btn${i===editingIdx?' active':''}" onclick="pickPePreset(${i})">
+      <div class="pen">${esc(p.name)}</div>
+      <div class="pes">${fromCm(p.w)}×${fromCm(p.h)} ${u()}</div>
+    </button>`).join('');
+}
+function pickPePreset(idx){
+  editingIdx = idx;
+  renderPeGrid();
+  loadPeForm(idx);
+}
+function loadPeForm(idx){
+  const p = PRESETS[idx];
+  document.getElementById('pe-name').value = p.name;
+  document.getElementById('pe-w').step = STEP[UNIT];
+  document.getElementById('pe-h').step = STEP[UNIT];
+  document.getElementById('pe-w').value = fromCm(p.w);
+  document.getElementById('pe-h').value = fromCm(p.h);
+}
+function savePreset(){
+  if(editingIdx < 0) return;
+  const name = document.getElementById('pe-name').value.trim();
+  const wv   = parseFloat(document.getElementById('pe-w').value)||0;
+  const hv   = parseFloat(document.getElementById('pe-h').value)||0;
+  if(!name || wv<=0 || hv<=0){ alert('กรุณากรอกข้อมูลให้ครบ'); return; }
+  PRESETS[editingIdx] = { name, w: toCm(wv), h: toCm(hv) };
+  savePresetsToStorage();
+  renderPeGrid();
+  renderMatProfiles();
+  // if editing the active preset, update material
+  if(editingIdx === activeMat){
+    matW_cm = PRESETS[editingIdx].w;
+    matH_cm = PRESETS[editingIdx].h;
+    rerender();
+  }
+  // feedback
+  const btn = document.querySelector('.pe-save');
+  btn.textContent = '✅ บันทึกแล้ว!';
+  setTimeout(()=>{ btn.textContent = '💾 บันทึก Preset นี้'; }, 1200);
+}
+
+// ── LAYOUT CALC ───────────────────────────────────
+let selLayout = 0;
+let projects  = JSON.parse(localStorage.getItem('kdpcut_v1')||'[]');
+let activePid = null;
+
+function fitCount(sw,sh,iw,ih,gap){
+  if(iw<=0||ih<=0||sw<=0||sh<=0) return {cols:0,rows:0,n:0};
+  const cols=Math.max(0,Math.floor((sw+gap)/(iw+gap)));
+  const rows=Math.max(0,Math.floor((sh+gap)/(ih+gap)));
+  return {cols,rows,n:cols*rows};
+}
+
+function calcLayouts(sw,sh,cw,ch,gap){
+  // L1: portrait full grid
+  const l1=fitCount(sw,sh,cw,ch,gap);
+  // L2: landscape full grid
+  const l2=fitCount(sw,sh,ch,cw,gap);
+
+  // winner orientation for L3/L4
+  const winPortrait = l1.n >= l2.n; // true=portrait wins, use portrait as main
+
+  // ── L3: main grid (winner) + bottom horizontal strip (opposite orientation) ──
+  // Main orientation dimensions
+  const mw3=winPortrait?cw:ch, mh3=winPortrait?ch:cw;
+  // Opposite orientation dimensions
+  const bw3=winPortrait?ch:cw, bh3=winPortrait?cw:ch;
+  let l3={n:0,mainCols:0,mainRows:0,botCols:0,botRows:0,botY:0,win:winPortrait};
+  {
+    const fullRows=Math.max(0,Math.floor((sh+gap)/(mh3+gap)));
+    for(let mr=fullRows;mr>=1;mr--){
+      const usedH=mr*(mh3+gap)-gap;
+      const remH=sh-usedH-gap;
+      if(remH<bh3) continue; // not enough for even 1 row of opposite
+      const mc=Math.max(0,Math.floor((sw+gap)/(mw3+gap)));
+      const bc=Math.max(0,Math.floor((sw+gap)/(bw3+gap)));
+      const br=Math.max(0,Math.floor((remH+gap)/(bh3+gap)));
+      if(br<1) continue;
+      const total=mc*mr+bc*br;
+      l3={n:total,mainCols:mc,mainRows:mr,botCols:bc,botRows:br,botY:usedH+gap,win:winPortrait};
+      break; // take the first (largest main) that fits
+    }
+    // fallback: no bottom strip possible, just main
+    if(l3.n===0){
+      const mc=Math.max(0,Math.floor((sw+gap)/(mw3+gap)));
+      const mr=Math.max(0,Math.floor((sh+gap)/(mh3+gap)));
+      l3={n:mc*mr,mainCols:mc,mainRows:mr,botCols:0,botRows:0,botY:0,win:winPortrait};
+    }
+  }
+
+  // ── L4: main grid (winner) + right vertical strip (opposite orientation) ──
+  const mw4=winPortrait?cw:ch, mh4=winPortrait?ch:cw;
+  const rw4=winPortrait?ch:cw, rh4=winPortrait?cw:ch;
+  let l4={n:0,mainCols:0,mainRows:0,rightCols:0,rightRows:0,rightX:0,win:winPortrait};
+  {
+    const fullCols=Math.max(0,Math.floor((sw+gap)/(mw4+gap)));
+    for(let mc=fullCols;mc>=1;mc--){
+      const usedW=mc*(mw4+gap)-gap;
+      const remW=sw-usedW-gap;
+      if(remW<rw4) continue;
+      const mr=Math.max(0,Math.floor((sh+gap)/(mh4+gap)));
+      const rc=Math.max(0,Math.floor((remW+gap)/(rw4+gap)));
+      const rr=Math.max(0,Math.floor((sh+gap)/(rh4+gap)));
+      if(rc<1||rr<1) continue;
+      const total=mc*mr+rc*rr;
+      l4={n:total,mainCols:mc,mainRows:mr,rightCols:rc,rightRows:rr,rightX:usedW+gap,win:winPortrait};
+      break;
+    }
+    if(l4.n===0){
+      const mc=Math.max(0,Math.floor((sw+gap)/(mw4+gap)));
+      const mr=Math.max(0,Math.floor((sh+gap)/(mh4+gap)));
+      l4={n:mc*mr,mainCols:mc,mainRows:mr,rightCols:0,rightRows:0,rightX:0,win:winPortrait};
+    }
+  }
+
+  return [
+    {...l1, id:0, label:'Layout 1', desc:'แนวตั้ง', mixed:false, rotated:false},
+    {...l2, id:1, label:'Layout 2', desc:'แนวนอน', mixed:false, rotated:true},
+    {...l3, id:2, label:'Layout 3', desc:'ล่าง', mixed:true, kind:'bottom'},
+    {...l4, id:3, label:'Layout 4', desc:'ขวา',  mixed:true, kind:'right'},
+  ];
+}
+
+function buildRects(sw,sh,cw,ch,gap,idx){
+  const rects=[];
+  const L=calcLayouts(sw,sh,cw,ch,gap)[idx];
+  function grid(ox,oy,iw,ih,cols,rows,rot){
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++)
+      rects.push({x:ox+c*(iw+gap),y:oy+r*(ih+gap),w:iw,h:ih,rot});
+  }
+  if(!L.mixed){
+    const iw=L.rotated?ch:cw, ih=L.rotated?cw:ch;
+    grid(0,0,iw,ih,L.cols,L.rows,L.rotated);
+    return rects;
+  }
+  // main orientation dims
+  const mw=L.win?cw:ch, mh=L.win?ch:cw;
+  // opposite orientation dims
+  const ow=L.win?ch:cw, oh=L.win?cw:ch;
+  if(L.kind==='bottom'){
+    grid(0,0,mw,mh,L.mainCols,L.mainRows,!L.win);
+    if(L.botRows>0) grid(0,L.botY,ow,oh,L.botCols,L.botRows,L.win);
+  } else {
+    grid(0,0,mw,mh,L.mainCols,L.mainRows,!L.win);
+    if(L.rightCols>0) grid(L.rightX,0,ow,oh,L.rightCols,L.rightRows,L.win);
+  }
+  return rects;
+}
+
+// ── LAYOUT ICONS ─────────────────────────────────
+function makeIcon(idx,active){
+  const W=36,H=26,sc=active?'var(--blue2)':'#b0b6c4';
+  if(idx===0){
+    const c1=(W-2)/3+1,c2=(W-2)*2/3+1,r1=(H-2)/2+1;
+    return `<svg width="${W}" height="${H}" fill="none"><rect x="1" y="1" width="${W-2}" height="${H-2}" stroke="${sc}" stroke-width="1.2" rx="1"/>
+      <line x1="${c1}" y1="1" x2="${c1}" y2="${H-1}" stroke="${sc}" stroke-width=".6"/>
+      <line x1="${c2}" y1="1" x2="${c2}" y2="${H-1}" stroke="${sc}" stroke-width=".6"/>
+      <line x1="1" y1="${r1}" x2="${W-1}" y2="${r1}" stroke="${sc}" stroke-width=".6"/></svg>`;
+  }
+  if(idx===1){
+    const c1=(W-2)/2+1,r1=(H-2)/3+1,r2=(H-2)*2/3+1;
+    return `<svg width="${W}" height="${H}" fill="none"><rect x="1" y="1" width="${W-2}" height="${H-2}" stroke="${sc}" stroke-width="1.2" rx="1"/>
+      <line x1="${c1}" y1="1" x2="${c1}" y2="${H-1}" stroke="${sc}" stroke-width=".6"/>
+      <line x1="1" y1="${r1}" x2="${W-1}" y2="${r1}" stroke="${sc}" stroke-width=".6"/>
+      <line x1="1" y1="${r2}" x2="${W-1}" y2="${r2}" stroke="${sc}" stroke-width=".6"/></svg>`;
+  }
+  if(idx===2){
+    const sp=Math.round((W-2)*.62)+1,c1=(sp-1)/2+1,r1=(H-2)/2+1;
+    return `<svg width="${W}" height="${H}" fill="none"><rect x="1" y="1" width="${W-2}" height="${H-2}" stroke="${sc}" stroke-width="1.2" rx="1"/>
+      <line x1="${sp}" y1="1" x2="${sp}" y2="${H-1}" stroke="${sc}" stroke-width=".9"/>
+      <line x1="${c1}" y1="1" x2="${c1}" y2="${H-1}" stroke="${sc}" stroke-width=".5"/>
+      <line x1="1" y1="${r1}" x2="${sp}" y2="${r1}" stroke="${sc}" stroke-width=".5"/>
+      <line x1="${sp}" y1="${r1}" x2="${W-1}" y2="${r1}" stroke="${sc}" stroke-width=".5" stroke-dasharray="2 2"/></svg>`;
+  }
+  const sp=Math.round((W-2)*.55)+1,r1=(H-2)/3+1,r2=(H-2)*2/3+1,mr=(H-2)/2+1;
+  return `<svg width="${W}" height="${H}" fill="none"><rect x="1" y="1" width="${W-2}" height="${H-2}" stroke="${sc}" stroke-width="1.2" rx="1"/>
+    <line x1="${sp}" y1="1" x2="${sp}" y2="${H-1}" stroke="${sc}" stroke-width=".9"/>
+    <line x1="1" y1="${r1}" x2="${sp}" y2="${r1}" stroke="${sc}" stroke-width=".5"/>
+    <line x1="1" y1="${r2}" x2="${sp}" y2="${r2}" stroke="${sc}" stroke-width=".5"/>
+    <line x1="${sp}" y1="${mr}" x2="${W-1}" y2="${mr}" stroke="${sc}" stroke-width=".5" stroke-dasharray="2 2"/></svg>`;
+}
+function renderTabs(layouts){
+  const maxN = Math.max(...layouts.map(L=>L.n||0));
+  document.getElementById('layout-tabs').innerHTML = layouts.map((L,i)=>{
+    const isBest = maxN>0 && L.n===maxN;
+    const isActive = i===selLayout;
+    const cls = `lbtn${isActive?' active':''}${isBest?' best-layout':''}`;
+    return `<button class="${cls}" onclick="selLayout=${i};rerender()" style="position:relative;">
+      ${isBest?`<span style="position:absolute;top:-1px;right:-1px;background:#16a34a;color:#fff;font-size:7px;font-weight:700;padding:1px 4px;border-radius:0 6px 0 5px;line-height:1.6;letter-spacing:.3px;">BEST</span>`:''}
+      <div class="licon">${makeIcon(i,isActive)}</div>
+      <div class="lcount" style="${isBest?'color:var(--green);':''}">${L.n}</div>
+      <div class="lname">${L.label}<br><span style="font-size:8px;color:var(--tx3)">${L.desc}</span></div>
+    </button>`;
+  }).join('');
+}
+
+// ── MAIN RENDER ───────────────────────────────────
+function rerender(){
+  const sw  = matW_cm, sh = matH_cm;
+  const cw  = toCm(parseFloat(document.getElementById('cw').value)||0);
+  const ch  = toCm(parseFloat(document.getElementById('ch').value)||0);
+  const gap = toCm(parseFloat(document.getElementById('gap').value)||0);
+  const layouts = calcLayouts(sw,sh,cw,ch,gap);
+  renderTabs(layouts);
+  const L = layouts[selLayout];
+  const rects = buildRects(sw,sh,cw,ch,gap,selLayout);
+
+  const ca = document.getElementById('canvas-area');
+  const PAD_W=80, PAD_H=100; // canvas-wrap padding × 2 + label space
+  const aW = Math.max(ca.clientWidth - PAD_W, 80);
+  const aH = Math.max(ca.clientHeight - PAD_H, 80);
+  let scale = 10;
+  if(sw>0 && sh>0){
+    scale = Math.min(aW/sw, aH/sh);
+  } else if(sw>0){ scale=aW/sw; }
+  else if(sh>0){ scale=aH/sh; }
+  if(scale<3) scale=3;
+
+  const sheet=document.getElementById('sheet');
+  sheet.style.width=(sw*scale)+'px'; sheet.style.height=(sh*scale)+'px';
+
+  const swR=fromCm(matW_cm), shR=fromCm(matH_cm);
+  const cwR=document.getElementById('cw').value, chR=document.getElementById('ch').value;
+  const gR=document.getElementById('gap').value;
+  document.getElementById('sheet-lbl').textContent=`${swR} × ${shR} ${u()}`;
+
+  // ── Render rectangles ──────────────────────────
+  let html = rects.map(r=>{
+    const x=r.x*scale,y=r.y*scale,w=r.w*scale,h=r.h*scale;
+    return `<div class="pi${r.rot?' rot':''}" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px"></div>`;
+  }).join('');
+
+  // ── Annotations (only when there's at least 1 rect & valid dims) ──
+  if(rects.length>0 && cw>0 && ch>0){
+    const r0 = rects[0];
+    const x0=r0.x*scale, y0=r0.y*scale, w0=r0.w*scale, h0=r0.h*scale;
+
+    // Display values in current unit
+    const cwD = fromCm(r0.w), chD = fromCm(r0.h), gD = fromCm(gap);
+
+    // ── 1a. Width dimension — arrow + label ABOVE the sheet (outside) ──
+    // placed at negative top so it appears above the sheet border
+    const DIM_ABOVE = 22; // px above sheet top
+    html += `
+      <!-- width dim outside sheet -->
+      <svg style="position:absolute;left:${x0}px;top:${-DIM_ABOVE}px;width:${w0}px;height:14px;overflow:visible;pointer-events:none;"
+           viewBox="0 0 ${w0} 14" preserveAspectRatio="none">
+        <line x1="0" y1="7" x2="${w0}" y2="7" stroke="var(--blue2)" stroke-width="1.2"/>
+        <line x1="0" y1="2" x2="0" y2="12" stroke="var(--blue2)" stroke-width="1.2"/>
+        <line x1="${w0}" y1="2" x2="${w0}" y2="12" stroke="var(--blue2)" stroke-width="1.2"/>
+      </svg>
+      <div style="position:absolute;left:${x0}px;top:${-DIM_ABOVE-14}px;width:${w0}px;text-align:center;font-size:9px;font-weight:700;color:var(--blue2);pointer-events:none;white-space:nowrap;line-height:1;">
+        ${cwD} ${u()}
+      </div>`;
+
+    // ── 1b. Height dimension — arrow + label LEFT of the sheet (outside) ──
+    const DIM_LEFT = 22; // px left of sheet left edge
+    html += `
+      <!-- height dim outside sheet -->
+      <svg style="position:absolute;left:${-DIM_LEFT}px;top:${y0}px;width:14px;height:${h0}px;overflow:visible;pointer-events:none;"
+           viewBox="0 0 14 ${h0}" preserveAspectRatio="none">
+        <line x1="7" y1="0" x2="7" y2="${h0}" stroke="var(--blue2)" stroke-width="1.2"/>
+        <line x1="2" y1="0" x2="12" y2="0" stroke="var(--blue2)" stroke-width="1.2"/>
+        <line x1="2" y1="${h0}" x2="12" y2="${h0}" stroke="var(--blue2)" stroke-width="1.2"/>
+      </svg>
+      <div style="position:absolute;left:${-DIM_LEFT-30}px;top:${y0}px;width:28px;height:${h0}px;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+        <span style="font-size:9px;font-weight:700;color:var(--blue2);writing-mode:vertical-lr;transform:rotate(180deg);white-space:nowrap;">${chD} ${u()}</span>
+      </div>`;
+
+    // ── 1c. Gap dimension arrow (between col 0 and col 1, if gap>0 & ≥2 cols) ──
+    if(gap>0){
+      // find a rect in same row but next column
+      const r1 = rects.find(r => Math.abs(r.y - r0.y)<0.001 && r.x > r0.x + r0.w*0.5);
+      if(r1){
+        const gx0 = (r0.x + r0.w)*scale;
+        const gx1 = r1.x*scale;
+        const gy  = y0 + h0/2;
+        const GAP_PX = gx1 - gx0;
+        html += `
+          <!-- gap dim -->
+          <svg style="position:absolute;left:${gx0}px;top:${gy-8}px;width:${GAP_PX}px;height:16px;overflow:visible;pointer-events:none;"
+               viewBox="0 0 ${GAP_PX} 16" preserveAspectRatio="none">
+            <line x1="0" y1="8" x2="${GAP_PX}" y2="8" stroke="#f59e0b" stroke-width="1.2"/>
+            <line x1="0" y1="4" x2="0" y2="12" stroke="#f59e0b" stroke-width="1.2"/>
+            <line x1="${GAP_PX}" y1="4" x2="${GAP_PX}" y2="12" stroke="#f59e0b" stroke-width="1.2"/>
+          </svg>
+          <div style="position:absolute;left:${gx0}px;top:${gy-20}px;width:${GAP_PX}px;text-align:center;font-size:9px;font-weight:700;color:#d97706;pointer-events:none;white-space:nowrap;line-height:1;">
+            gap ${gD}
+          </div>`;
+      }
+    }
+
+    // ── 2. Right margin ─────────────────────────────────────────────
+    // Find the rightmost edge among all rects
+    const rightmostX = Math.max(...rects.map(r=>(r.x+r.w)*scale));
+    const sheetW = sw*scale;
+    const marginR_px = sheetW - rightmostX;
+    const marginR_val = fromCm(sw - Math.max(...rects.map(r=>r.x+r.w)));
+    if(marginR_px >= 3){
+      const mry = (sh*scale)/2;
+      html += `
+        <!-- right margin -->
+        <svg style="position:absolute;left:${rightmostX}px;top:0;width:${marginR_px}px;height:${sh*scale}px;overflow:visible;pointer-events:none;"
+             viewBox="0 0 ${marginR_px} ${sh*scale}" preserveAspectRatio="none">
+          <rect x="0" y="0" width="${marginR_px}" height="${sh*scale}" fill="rgba(239,68,68,.07)"/>
+          <!-- double-headed arrow -->
+          <line x1="${marginR_px/2}" y1="${mry-18}" x2="${marginR_px/2}" y2="${mry+18}" stroke="#ef4444" stroke-width="1" stroke-dasharray="3 2"/>
+          <line x1="2" y1="${mry}" x2="${marginR_px-2}" y2="${mry}" stroke="#ef4444" stroke-width="1.2"/>
+          <line x1="2" y1="${mry-4}" x2="2" y2="${mry+4}" stroke="#ef4444" stroke-width="1.2"/>
+          <line x1="${marginR_px-2}" y1="${mry-4}" x2="${marginR_px-2}" y2="${mry+4}" stroke="#ef4444" stroke-width="1.2"/>
+        </svg>
+        <div style="position:absolute;left:${rightmostX}px;top:${mry+22}px;width:${marginR_px}px;text-align:center;font-size:9px;font-weight:700;color:#ef4444;pointer-events:none;white-space:nowrap;background:rgba(255,255,255,.8);line-height:1.3;border-radius:2px;">
+          ▶ ${marginR_val} ${u()}
+        </div>`;
+    }
+
+    // ── 3. Bottom margin ────────────────────────────────────────────
+    const bottommostY = Math.max(...rects.map(r=>(r.y+r.h)*scale));
+    const sheetH = sh*scale;
+    const marginB_px = sheetH - bottommostY;
+    const marginB_val = fromCm(sh - Math.max(...rects.map(r=>r.y+r.h)));
+    if(marginB_px >= 3){
+      const mbx = (sw*scale)/2;
+      html += `
+        <!-- bottom margin -->
+        <svg style="position:absolute;left:0;top:${bottommostY}px;width:${sw*scale}px;height:${marginB_px}px;overflow:visible;pointer-events:none;"
+             viewBox="0 0 ${sw*scale} ${marginB_px}" preserveAspectRatio="none">
+          <rect x="0" y="0" width="${sw*scale}" height="${marginB_px}" fill="rgba(239,68,68,.07)"/>
+          <line x1="${mbx-18}" y1="${marginB_px/2}" x2="${mbx+18}" y2="${marginB_px/2}" stroke="#ef4444" stroke-width="1" stroke-dasharray="3 2"/>
+          <line x1="${mbx}" y1="2" x2="${mbx}" y2="${marginB_px-2}" stroke="#ef4444" stroke-width="1.2"/>
+          <line x1="${mbx-4}" y1="2" x2="${mbx+4}" y2="2" stroke="#ef4444" stroke-width="1.2"/>
+          <line x1="${mbx-4}" y1="${marginB_px-2}" x2="${mbx+4}" y2="${marginB_px-2}" stroke="#ef4444" stroke-width="1.2"/>
+        </svg>
+        <div style="position:absolute;top:${bottommostY}px;left:0;width:${sw*scale}px;height:${marginB_px}px;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+          <span style="font-size:9px;font-weight:700;color:#ef4444;background:rgba(255,255,255,.8);padding:1px 4px;border-radius:2px;white-space:nowrap;">▼ ${marginB_val} ${u()}</span>
+        </div>`;
+    }
+  }
+
+  document.getElementById('placed').innerHTML = html;
+  document.getElementById('count-big').textContent=L.n||'';
+
+  document.getElementById('st-n').textContent=L.n;
+  document.getElementById('st-l').textContent=L.label;
+  document.getElementById('st-sw').textContent=`${swR}×${shR}`;
+  document.getElementById('st-cw').textContent=`${cwR}×${chR}`;
+  document.getElementById('st-g').textContent=`${gR} ${u()}`;
+  if(!L.mixed){
+    document.getElementById('st-c').textContent=(L.cols||0)+' ช่อง';
+    document.getElementById('st-r').textContent=(L.rows||0)+' แถว';
+  } else if(L.kind==='bottom'){
+    document.getElementById('st-c').textContent=(L.mainCols||0)+' / '+(L.botCols||0)+' ช่อง';
+    document.getElementById('st-r').textContent=(L.mainRows||0)+' / '+(L.botRows||0)+' แถว';
+  } else {
+    document.getElementById('st-c').textContent=(L.mainCols||0)+' / '+(L.rightCols||0)+' ช่อง';
+    document.getElementById('st-r').textContent=(L.mainRows||0)+' / '+(L.rightRows||0)+' แถว';
+  }
+  const util=sw>0&&sh>0&&cw>0&&ch>0?Math.min(100,Math.round(L.n*cw*ch/(sw*sh)*100)):0;
+  document.getElementById('st-u').textContent=util+'%';
+  const uf=document.getElementById('ufill');
+  uf.style.width=util+'%';
+  uf.style.background=util>=80?'var(--green)':util>=50?'var(--amber)':'var(--blue3)';
+}
+
+// ── SAVE / LOAD ───────────────────────────────────
+function saveProject(){
+  const cwCm=toCm(parseFloat(document.getElementById('cw').value)||0);
+  const chCm=toCm(parseFloat(document.getElementById('ch').value)||0);
+  const gapCm=toCm(parseFloat(document.getElementById('gap').value)||0);
+  const layouts=calcLayouts(matW_cm,matH_cm,cwCm,chCm,gapCm);
+  const n=layouts[selLayout].n;
+  const p={
+    id:Date.now(), swCm:matW_cm, shCm:matH_cm, cwCm, chCm, gapCm,
+    cwR:document.getElementById('cw').value,
+    chR:document.getElementById('ch').value,
+    gapR:document.getElementById('gap').value,
+    swR:fromCm(matW_cm), shR:fromCm(matH_cm),
+    unit:UNIT, layout:selLayout, label:layouts[selLayout].label, n
+  };
+  projects.unshift(p);
+  localStorage.setItem('kdpcut_v1',JSON.stringify(projects));
+  activePid=p.id; renderProjects();
+  const btn=document.getElementById('btn-save');
+  btn.textContent='✅ Saved!';
+  setTimeout(()=>{ btn.innerHTML='💾 Save Project'; },1400);
+}
+function loadProject(id){
+  const p=projects.find(x=>x.id===id); if(!p) return;
+  activePid=id;
+  if(p.unit!==UNIT){ UNIT=p.unit; document.getElementById('unit').value=p.unit; document.getElementById('gunit').textContent=p.unit; }
+  matW_cm=p.swCm; matH_cm=p.shCm;
+  activeMat=PRESETS.findIndex(m=>Math.abs(m.w-matW_cm)<0.01&&Math.abs(m.h-matH_cm)<0.01);
+  document.getElementById('cw').value=fromCm(p.cwCm);
+  document.getElementById('ch').value=fromCm(p.chCm);
+  document.getElementById('gap').value=fromCm(p.gapCm);
+  selLayout=p.layout; renderMatProfiles(); renderProjects(); rerender();
+}
+function deleteProject(id,e){
+  e.stopPropagation();
+  projects=projects.filter(x=>x.id!==id);
+  localStorage.setItem('kdpcut_v1',JSON.stringify(projects));
+  if(activePid===id) activePid=null;
+  renderProjects();
+}
+function renderProjects(){
+  const el=document.getElementById('proj-list');
+  if(!projects.length){ el.innerHTML='<div class="empty-proj"><div class="ico">📁</div>ยังไม่มี project</div>'; return; }
+  el.innerHTML=projects.map(p=>`
+    <div class="pcard${p.id===activePid?' active':''}" onclick="loadProject(${p.id})">
+      <div class="pcard-info">
+        <div class="pname">${p.cwR}×${p.chR} ${p.unit}</div>
+        <div class="pmeta">${p.swR}×${p.shR} gap ${p.gapR}</div>
+      </div>
+      <div class="pbadge">${p.n}</div>
+      <button class="pdel" onclick="deleteProject(${p.id},event)">✕</button>
+    </div>`).join('');
+}
+
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── RIGHT PANEL TOGGLE ────────────────────────────
+let rpOpen = true;
+function toggleRpanel(){
+  rpOpen = !rpOpen;
+  const rp = document.getElementById('rpanel');
+  const arr = document.getElementById('rp-arrow');
+  const btn = document.getElementById('rp-toggle');
+  if(rpOpen){
+    rp.classList.remove('collapsed');
+    arr.textContent = '◀▶';
+    btn.style.right = '0';
+  } else {
+    rp.classList.add('collapsed');
+    arr.textContent = '◀▶';
+    btn.style.right = '0';
+  }
+  setTimeout(rerender, 220);
+}
+
+// ── RESIZE ────────────────────────────────────────
+let rTimer;
+window.addEventListener('resize',()=>{ clearTimeout(rTimer); rTimer=setTimeout(rerender,80); });
+
+// ── INIT ──────────────────────────────────────────
+renderMatProfiles();
+renderProjects();
+rerender();
+</script>
+</body>
+</html>
